@@ -5,22 +5,21 @@ using UnityEngine;
 
 public class AgentAI : MonoBehaviour
 {
-    [Space(5)]
     public bool rayDebug = false;
     public bool availableDirDebug = false;
     public bool directionDebug = false;
     public bool genPathDebug = false;
+
     [HideInInspector]
     public bool isInDeadEnd = false;
     [HideInInspector]
     public bool shouldInitNewAgent = true;
-
     [HideInInspector]
     public Vector3 lastCrossroadPosition;
     [HideInInspector]
     public List<int> pathHistory;
     [HideInInspector]
-    public List<int> _genPath;
+    public List<int> _previousGenPath;
     
     private int _numOfStepsTaken = 0;
     private int _lastDirectionTaken = -1;//deciding where you can move
@@ -35,23 +34,22 @@ public class AgentAI : MonoBehaviour
     private void OnValidate()
     {
         _raycastScript = this.GetComponent<RaySidesAndDown>();
-        Debug.Assert(_raycastScript, "Agent does not have a RaySidesAndDown script!");
+                Debug.Assert(_raycastScript, "Agent does not have a RaySidesAndDown script!");
         _moveScript = this.GetComponent<MoveDirection>();
-        Debug.Assert(_moveScript, "Agent does not have a MoveDirection script!");
+                Debug.Assert(_moveScript, "Agent does not have a MoveDirection script!");
         _agentManagerObj = GameObject.FindGameObjectWithTag("agentManager");
-        Debug.Assert(_agentManagerObj, "AgentManager object not found!");
+                Debug.Assert(_agentManagerObj, "AgentManager object not found!");
         _agentManagerScript = _agentManagerObj.GetComponent<AgentManager>();
-        Debug.Assert(_agentManagerScript, "AgentManager script not found!");
+                Debug.Assert(_agentManagerScript, "AgentManager script not found!");
     }
     private void Start()
     {
         initAgent();
-
         if (genPathDebug)
         {
-            string message = "GEN PATH in " + _genPath.Count + " steps! Steps taken: ";
+            string message = "GEN PATH in " + _previousGenPath.Count + " steps! Steps taken: ";
 
-            foreach (int dir in _genPath)
+            foreach (int dir in _previousGenPath)
             {
                 message += dir + ", ";
             }
@@ -88,47 +86,40 @@ public class AgentAI : MonoBehaviour
         {
             lastCrossroadPosition = this.transform.position;//note before you move from the crossroad
 
-            //Chose random:
+            //choose random:
             int dirTaken = UnityEngine.Random.Range(0, _currentlyAvailableDirections.Count);
-            //Look what is the direction in generationPath at this currentStep + 1 --> because you move, then note that you made a step, so you have to look ahead 1 step than this agent's current number of steps
-            if (_genPath != null && _genPath.Count >= _numOfStepsTaken)// && _agentManager.generationPath.Count >= (_numOfStepsTaken + 1)
+            if (_previousGenPath != null && _previousGenPath.Count >= _numOfStepsTaken)
             {
-                //choose path based on probability:
+                //use path based on probability?
                 if (ShouldFollowGenerationPathStepWithProbability(_agentManagerScript.agentProbabilityToFollowGenPath))
                 {
-                    dirTaken = _genPath[_numOfStepsTaken];//take the same direction as in the previous generation
+                    dirTaken = _previousGenPath[_numOfStepsTaken];//take the same direction as in the previous generation
                     moveAndNoteVariables(dirTaken, true);
-                    if (directionDebug) Debug.Log("More directions to go GenerationPath: " + dirTaken);
                 }
                 else
                 {
-                    if (directionDebug) Debug.Log("1 More directions to go Random: " + _currentlyAvailableDirections[dirTaken]);
+                    //use random:
                     moveAndNoteVariables(_currentlyAvailableDirections[dirTaken], true);
                 }
             }
             else
             {
-                if (directionDebug) Debug.Log("2 More directions to go Random: " + _currentlyAvailableDirections[dirTaken]);
+                //Choose random:
                 moveAndNoteVariables(_currentlyAvailableDirections[dirTaken], true);
             }
-            if (directionDebug) Debug.Log("Steps taken = " + _numOfStepsTaken);
         }
         else if (_currentlyAvailableDirections.Count == 1)
         {
-            if (directionDebug) Debug.Log("Just one direction to go: " + _currentlyAvailableDirections[0]);
             moveAndNoteVariables(_currentlyAvailableDirections[0], false);
-            if (directionDebug) Debug.Log("Steps taken = " + _numOfStepsTaken);
         }
         else if (_currentlyAvailableDirections.Count <= 0)
         {
-            if (directionDebug) Debug.Log("No direction to go");
             isInDeadEnd = true;
             _agentManagerScript.AgentAtDeadEnd(lastCrossroadPosition, pathHistory);
         }
     }
     private void UpdateAvailableDirections()
     {
-        //reset list
         if (_currentlyAvailableDirections.Count > 0) _currentlyAvailableDirections.Clear();
 
         //Find for each direction
@@ -219,35 +210,30 @@ public class AgentAI : MonoBehaviour
             return -1;
         }
     }
-    /// <summary>
-    /// Returns true if a step from generation path was chosen based on given probability.
-    /// Returns false if the step from generation path was not chosen.
-    /// </summary>
     private bool ShouldFollowGenerationPathStepWithProbability(float pPercentage)
     {
         double rnd = AgentAI.rnd.Next(0, 100);
         if (rnd <= pPercentage)
         {
-            Debug.Log("Following gen path.");
+            //if(directionDebug) Debug.Log("Following gen path.");
             return true;
         }
-
-        Debug.Log("NOT Following gen path.");
+        //if(directionDebug) Debug.Log("NOT Following gen path.");
         return false;
     }
     private void initAgent()
     {
         if (shouldInitNewAgent)
         {
-            if (_genPath != null)
+            if (_previousGenPath != null)
             {
-                _genPath.Clear();
-                _genPath = _agentManagerObj.GetComponent<AgentManager>().generationPath;
+                _previousGenPath.Clear();
+                _previousGenPath = _agentManagerObj.GetComponent<AgentManager>().generationPath;
             }
             
             if (pathHistory != null) pathHistory.Clear();
 
-            Debug.Assert(_genPath == null, "GenPath is null");
+            Debug.Assert(_previousGenPath == null, "GenPath is null");
             _lastDirectionTaken = -1;
             _numOfStepsTaken = 0;
             isInDeadEnd = false;

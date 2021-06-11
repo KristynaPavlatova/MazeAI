@@ -53,16 +53,12 @@ public class AgentManager : MonoBehaviour
             Debug.Log(message);
         }
         
-
-        int stepsNeeded = pPath.Count;
-
-        if(debugInfo) Debug.Log($"Goal found! {pPath.Count}, {generationNum}");
-        if (debugInfo) Debug.Log("PRESS 'R' TO RESTART");
+        //if (debugInfo) Debug.Log($"Goal found! {pPath.Count}, {generationNum}");
+        //if (debugInfo) Debug.Log("PRESS 'R' TO RESTART");
 
         if (Input.GetKeyDown(KeyCode.R))
         {
             generationNum = 0;
-            stepsNeeded = 0;
             initNewGenerationOfAgents(_startPos);
         }
 
@@ -77,7 +73,7 @@ public class AgentManager : MonoBehaviour
 
         if (_agentsAtDeadEnd == agents.Length)
         {
-            if (debugInfo) Debug.Log("ALL AGENTS AT DEAD END: new generation started.");
+            //if (debugInfo) Debug.Log("ALL AGENTS AT DEAD END: new generation started.");
             initNewGenerationOfAgents(_startPos, pPath);
         }
     }
